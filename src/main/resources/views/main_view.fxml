@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.radio.controllers.MainController">
+
+    <!-- Título superior -->
+    <top>
+        <VBox spacing="10">
+            <Label text="Generador de Listas ZaraRadio"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-alignment: center;" />
+            <Separator />
+            <padding>
+                <Insets top="10" bottom="10" left="20" right="20"/>
+            </padding>
+        </VBox>
+    </top>
+
+    <!-- Contenido principal -->
+    <center>
+        <ScrollPane fitToWidth="true">
+            <VBox spacing="15">
+                <padding>
+                    <Insets top="10" bottom="10" left="20" right="20"/>
+                </padding>
+
+                <!-- Configuración de carpetas especiales -->
+                <TitledPane text="Carpetas Especiales (Requeridas)" expanded="true">
+                    <GridPane hgap="10" vgap="8">
+                        <!-- Elementos Especiales -->
+                        <Label text="Elementos Especiales:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                        <TextField fx:id="txtElementosEspeciales" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                        <Button fx:id="btnElementosEspeciales" text="..." onAction="#seleccionarCarpetaElementosEspeciales" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
+                        <Label text="(Himnos: 01_..., 02_..., Poemas: 03_...)" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-text-fill: #666666; -fx-font-size: 10px;"/>
+
+                        <!-- Identificaciones -->
+                        <Label text="Identificaciones:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                        <TextField fx:id="txtIdentificaciones" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                        <Button fx:id="btnIdentificaciones" text="..." onAction="#seleccionarCarpetaIdentificaciones" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+                        <Label text="(Archivos numerados: identificacion01.mp3, identificacion02.mp3...)" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-text-fill: #666666; -fx-font-size: 10px;"/>
+
+                        <!-- Felicitaciones -->
+                        <Label text="Felicitaciones:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                        <TextField fx:id="txtFelicitaciones" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                        <Button fx:id="btnFelicitaciones" text="..." onAction="#seleccionarCarpetaFelicitaciones" GridPane.columnIndex="2" GridPane.rowIndex="4"/>
+                        <Label text="(Archivos numerados: felicitacion01.mp3, felicitacion02.mp3...)" GridPane.columnIndex="1" GridPane.rowIndex="5" style="-fx-text-fill: #666666; -fx-font-size: 10px;"/>
+
+                        <!-- Promos A -->
+                        <Label text="Promos A:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
+                        <TextField fx:id="txtPromosA" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                        <Button fx:id="btnPromosA" text="..." onAction="#seleccionarCarpetaPromosA" GridPane.columnIndex="2" GridPane.rowIndex="6"/>
+                        <Label text="(Archivos numerados: promoA01.mp3, promoA02.mp3...)" GridPane.columnIndex="1" GridPane.rowIndex="7" style="-fx-text-fill: #666666; -fx-font-size: 10px;"/>
+
+                        <!-- Promos B -->
+                        <Label text="Promos B:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
+                        <TextField fx:id="txtPromosB" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
+                        <Button fx:id="btnPromosB" text="..." onAction="#seleccionarCarpetaPromosB" GridPane.columnIndex="2" GridPane.rowIndex="8"/>
+                        <Label text="(Archivos numerados: promoB01.mp3, promoB02.mp3...)" GridPane.columnIndex="1" GridPane.rowIndex="9" style="-fx-text-fill: #666666; -fx-font-size: 10px;"/>
+
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" prefWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                            <ColumnConstraints minWidth="40" prefWidth="40"/>
+                        </columnConstraints>
+                    </GridPane>
+                </TitledPane>
+
+                <!-- Configuración por horas -->
+                <TitledPane text="Programación por Horas (Configurar solo las horas necesarias)" expanded="true">
+                    <VBox spacing="10">
+                        <Separator />
+
+                        <TableView fx:id="tablaHoras" prefHeight="300">
+                            <columns>
+                                <TableColumn fx:id="colHora" text="Hora" prefWidth="100"/>
+                                <TableColumn fx:id="colGenero" text="Género" prefWidth="150"/>
+                                <TableColumn fx:id="colCarpeta" text="Carpeta" prefWidth="300"/>
+                                <TableColumn fx:id="colAcciones" text="Acciones" prefWidth="100"/>
+                            </columns>
+                        </TableView>
+                        <HBox spacing="10">
+                            <Button fx:id="btnInicializarHoras" text="Inicializar Horarios" onAction="#inicializarHorarios"/>
+                            <Button fx:id="btnCargarConfiguracion" text="Cargar Configuración" onAction="#cargarConfiguracion"/>
+                            <Button fx:id="btnGuardarConfiguracion" text="Guardar Configuración" onAction="#guardarConfiguracion"/>
+                        </HBox>
+                    </VBox>
+                </TitledPane>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- Botones de acción -->
+    <bottom>
+        <VBox spacing="10">
+            <Separator />
+            <HBox spacing="15" alignment="CENTER">
+                <Button fx:id="btnGenerarLista" text="Generar Lista" onAction="#generarLista"
+                        style="-fx-font-size: 14px; -fx-font-weight: bold;" prefWidth="150"/>
+                <Button fx:id="btnVistaPrevia" text="Vista Previa" onAction="#mostrarVistaPrevia" prefWidth="120"/>
+                <Button fx:id="btnExportarLST" text="Exportar .LST" onAction="#exportarLST"
+                        disable="true" prefWidth="120"/>
+                <Button fx:id="btnLimpiar" text="Limpiar Todo" onAction="#limpiarTodo" prefWidth="120"/>
+            </HBox>
+            <Label fx:id="lblEstado" text="Configure las carpetas especiales y los horarios necesarios..."
+                   style="-fx-text-fill: #666666;" alignment="CENTER"/>
+            <padding>
+                <Insets top="10" bottom="15" left="20" right="20"/>
+            </padding>
+        </VBox>
+    </bottom>
+
+</BorderPane>
