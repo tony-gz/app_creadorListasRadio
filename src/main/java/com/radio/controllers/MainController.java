@@ -60,7 +60,7 @@ public class MainController implements Initializable {
     @FXML private Button btnGuardarConfiguracion;
     @FXML private Button btnGenerarLista;
     @FXML private Button btnVistaPrevia;
-    @FXML private Button btnExportarLST;
+    @FXML private Button btnExportarM3U;
     @FXML private Button btnLimpiar;
 
     // Estado
@@ -260,13 +260,115 @@ public class MainController implements Initializable {
     }
 
     private void verificarArchivosEnCarpeta(File carpeta, String tipo) {
-        List<String> archivos = ArchivoService.obtenerArchivosAudio(carpeta.getAbsolutePath());
-        if (archivos.isEmpty()) {
-            mostrarAlerta("Advertencia", "No se encontraron archivos de audio en la carpeta de " + tipo + ".");
+        // Para carpetas especiales (promos, identificaciones, etc.), usar verificación específica
+        if (tipo.contains("Promo") || tipo.contains("Identificacion") || tipo.contains("Felicitacion")) {
+            List<String> archivosEspeciales = obtenerArchivosEspecialesNumerados(carpeta.getAbsolutePath(), tipo);
+            if (archivosEspeciales.isEmpty()) {
+                mostrarAlerta("Advertencia",
+                        "No se encontraron archivos numerados en la carpeta de " + tipo + ".\n" +
+                                "Los archivos deben empezar con números (01, 02, 03, etc.)");
+            } else {
+                actualizarEstado("Carpeta " + tipo + " configurada: " + archivosEspeciales.size() + " archivos numerados encontrados.");
+            }
         } else {
-            actualizarEstado("Carpeta " + tipo + " configurada: " + archivos.size() + " archivos encontrados.");
+            // Para carpetas de música, usar el método original
+            List<String> archivos = ArchivoService.obtenerArchivosAudio(carpeta.getAbsolutePath());
+            if (archivos.isEmpty()) {
+                mostrarAlerta("Advertencia", "No se encontraron archivos de audio en la carpeta de " + tipo + ".");
+            } else {
+                actualizarEstado("Carpeta " + tipo + " configurada: " + archivos.size() + " archivos encontrados.");
+            }
         }
     }
+
+    private List<String> obtenerArchivosEspecialesNumerados(String rutaCarpeta, String tipo) {
+        List<String> archivos = new ArrayList<>();
+        File carpeta = new File(rutaCarpeta);
+
+        if (!carpeta.exists() || !carpeta.isDirectory()) {
+            return archivos;
+        }
+
+        File[] listaArchivos = carpeta.listFiles((dir, nombre) -> {
+            // Debe ser archivo de audio
+            String extension = nombre.toLowerCase();
+            boolean esAudio = extension.endsWith(".mp3") || extension.endsWith(".wav") ||
+                    extension.endsWith(".wma") || extension.endsWith(".ogg") ||
+                    extension.endsWith(".aac");
+
+            // Debe empezar con número (01, 02, 03, etc.)
+            boolean tieneNumero = nombre.matches("^\\d{2,3}.*");
+
+            return esAudio && tieneNumero;
+        });
+
+        if (listaArchivos != null) {
+            // Ordenar por número
+            java.util.Arrays.sort(listaArchivos, (a, b) -> {
+                String numA = extraerNumero(a.getName());
+                String numB = extraerNumero(b.getName());
+                try {
+                    return Integer.compare(Integer.parseInt(numA), Integer.parseInt(numB));
+                } catch (NumberFormatException e) {
+                    return a.getName().compareTo(b.getName());
+                }
+            });
+
+            for (File archivo : listaArchivos) {
+                archivos.add(archivo.getAbsolutePath());
+            }
+
+            // Debugging: mostrar los archivos encontrados
+            System.out.println("Archivos numerados encontrados en " + rutaCarpeta + " (" + tipo + "):");
+            for (int i = 0; i < listaArchivos.length; i++) {
+                String numero = extraerNumero(listaArchivos[i].getName());
+                System.out.println("  [" + i + "] " + listaArchivos[i].getName() + " (número: " + numero + ")");
+            }
+        }
+
+        return archivos;
+    }
+
+    private String extraerNumero(String nombreArchivo) {
+        java.util.regex.Pattern patron = java.util.regex.Pattern.compile("^(\\d{2,3})");
+        java.util.regex.Matcher matcher = patron.matcher(nombreArchivo);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return "999"; // Valor por defecto
+    }
+
+//    private List<String> obtenerArchivosEspeciales(String rutaCarpeta) {
+//        List<String> archivos = new ArrayList<>();
+//        File carpeta = new File(rutaCarpeta);
+//
+//        if (!carpeta.exists() || !carpeta.isDirectory()) {
+//            return archivos;
+//        }
+//
+//        File[] listaArchivos = carpeta.listFiles((dir, nombre) -> {
+//            String extension = nombre.toLowerCase();
+//            return extension.endsWith(".mp3") || extension.endsWith(".wav") ||
+//                    extension.endsWith(".wma") || extension.endsWith(".ogg") ||
+//                    extension.endsWith(".aac");
+//        });
+//
+//        if (listaArchivos != null) {
+//            for (File archivo : listaArchivos) {
+//                archivos.add(archivo.getAbsolutePath());
+//            }
+//
+//            // Debugging: mostrar los archivos encontrados
+//            System.out.println("Archivos encontrados en " + rutaCarpeta + ":");
+//            for (String archivo : archivos) {
+//                System.out.println("  - " + archivo);
+//            }
+//        }
+//
+//        return archivos;
+//    }
 
     // Métodos de configuración de horarios
     @FXML
@@ -304,7 +406,7 @@ public class MainController implements Initializable {
             // Generar la lista
             listaGenerada = generadorService.generarListaCompleta(LocalDate.now(), configuracion);
 
-            btnExportarLST.setDisable(false);
+            btnExportarM3U.setDisable(false);
             btnVistaPrevia.setDisable(false);
 
             // Contar horas programadas
@@ -354,33 +456,142 @@ public class MainController implements Initializable {
         mostrarVentanaTexto("Vista Previa de la Lista", preview.toString());
     }
 
+
+    // Reemplazar el método exportarM3U() en MainController.java
     @FXML
-    private void exportarLST() {
+    private void exportarM3U() {
         if (listaGenerada == null) {
             mostrarAlerta("Error", "Debe generar una lista primero.");
             return;
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Exportar Lista LST");
+        fileChooser.setTitle("Exportar Lista M3U");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Archivos LST", "*.lst")
+                new FileChooser.ExtensionFilter("Archivos M3U", "*.m3u")
         );
         fileChooser.setInitialFileName("Lista_" +
-                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".lst");
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ".m3u");
 
         File archivo = fileChooser.showSaveDialog(getStage());
         if (archivo != null) {
-            boolean exito = ArchivoService.guardarListaLst(listaGenerada, archivo.getAbsolutePath());
+            // Mostrar diálogo de opciones de codificación
+            String codificacionElegida = mostrarDialogoCodificacion();
+
+            boolean exito;
+            if ("AUTO".equals(codificacionElegida)) {
+                // Usar el método que prueba múltiples codificaciones
+                exito = ArchivoService.guardarListaM3uCompatible(listaGenerada, archivo.getAbsolutePath());
+            } else {
+                // Usar codificación específica (requiere modificar el método original)
+                exito = ArchivoService.guardarListaM3u(listaGenerada, archivo.getAbsolutePath());
+            }
 
             if (exito) {
                 actualizarEstado("Lista exportada exitosamente: " + archivo.getName());
-                mostrarInformacion("Éxito", "Lista LST exportada correctamente.\n\nArchivo: " +
-                        archivo.getAbsolutePath());
+                mostrarInformacion("Éxito",
+                        "Lista M3U exportada correctamente.\n\n" +
+                                "Archivo: " + archivo.getAbsolutePath() + "\n" +
+                                "Codificación: " + (codificacionElegida.equals("AUTO") ? "Automática (Windows-1252)" : codificacionElegida) + "\n\n" +
+                                "Si ZaraRadio no puede leer los caracteres especiales,\n" +
+                                "intente arrastrar los archivos directamente al programa.");
             } else {
-                mostrarAlerta("Error", "No se pudo exportar la lista LST.");
+                mostrarAlerta("Error", "No se pudo exportar la lista M3U.");
             }
         }
+    }
+
+    // NUEVO método para mostrar opciones de codificación
+    private String mostrarDialogoCodificacion() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Codificación del archivo M3U");
+        alert.setHeaderText("Seleccione la codificación para el archivo M3U");
+        alert.setContentText("Para mejor compatibilidad con ZaraRadio, se recomienda 'Automática':");
+
+        ButtonType btnAuto = new ButtonType("Automática (Recomendado)");
+        ButtonType btnUTF8 = new ButtonType("UTF-8");
+        ButtonType btnWindows = new ButtonType("Windows-1252");
+        ButtonType btnCancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(btnAuto, btnUTF8, btnWindows, btnCancel);
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent()) {
+            if (result.get() == btnAuto) {
+                return "AUTO";
+            } else if (result.get() == btnUTF8) {
+                return "UTF-8";
+            } else if (result.get() == btnWindows) {
+                return "Windows-1252";
+            }
+        }
+
+        return "AUTO"; // Por defecto
+    }
+
+    // MÉTODO ADICIONAL: Diagnóstico de archivos problemáticos
+    @FXML
+    private void diagnosticarArchivos() {
+        if (listaGenerada == null) {
+            mostrarAlerta("Error", "Debe generar una lista primero.");
+            return;
+        }
+
+        StringBuilder diagnostico = new StringBuilder();
+        diagnostico.append("DIAGNÓSTICO DE CARACTERES ESPECIALES\n");
+        diagnostico.append("=====================================\n\n");
+
+        Set<String> problemFiles = new HashSet<>();
+
+        // Revisar canciones de todos los bloques
+        for (BloqueHora bloque : listaGenerada.getBloques()) {
+            for (Cancion cancion : bloque.getCanciones()) {
+                if (!cancion.getRutaArchivo().equals(".time")) {
+                    String ruta = cancion.getRutaArchivo();
+                    if (contieneCaracteresEspeciales(ruta)) {
+                        problemFiles.add(ruta);
+                    }
+                }
+            }
+        }
+
+        // Revisar inserciones especiales
+        for (InsercionEspecial insercion : listaGenerada.getApertura()) {
+            if (contieneCaracteresEspeciales(insercion.getRutaArchivo())) {
+                problemFiles.add(insercion.getRutaArchivo());
+            }
+        }
+
+        for (InsercionEspecial insercion : listaGenerada.getCierre()) {
+            if (contieneCaracteresEspeciales(insercion.getRutaArchivo())) {
+                problemFiles.add(insercion.getRutaArchivo());
+            }
+        }
+
+        if (problemFiles.isEmpty()) {
+            diagnostico.append("✅ No se encontraron archivos con caracteres especiales.\n");
+            diagnostico.append("La lista debería funcionar correctamente en ZaraRadio.");
+        } else {
+            diagnostico.append("⚠️  Se encontraron ").append(problemFiles.size()).append(" archivos con caracteres especiales:\n\n");
+            for (String archivo : problemFiles) {
+                File f = new File(archivo);
+                diagnostico.append("• ").append(f.getName()).append("\n");
+                diagnostico.append("  ").append(archivo).append("\n\n");
+            }
+
+            diagnostico.append("RECOMENDACIONES:\n");
+            diagnostico.append("1. Use codificación 'Automática' al exportar\n");
+            diagnostico.append("2. Si ZaraRadio no lee los archivos, arrástrelos manualmente\n");
+            diagnostico.append("3. Considere renombrar archivos sin acentos para evitar problemas futuros");
+        }
+
+        mostrarVentanaTexto("Diagnóstico de Caracteres Especiales", diagnostico.toString());
+    }
+
+    // Método auxiliar para detectar caracteres especiales
+    private boolean contieneCaracteresEspeciales(String texto) {
+        return texto.matches(".*[áéíóúüñÁÉÍÓÚÜÑ¿¡].*");
     }
 
     // Actualizar el método limpiarTodo:
@@ -405,7 +616,7 @@ public class MainController implements Initializable {
 
             // Resetear estado
             listaGenerada = null;
-            btnExportarLST.setDisable(true);
+            btnExportarM3U.setDisable(true);
             btnVistaPrevia.setDisable(true);
 
             actualizarEstado("Configuración limpiada.");

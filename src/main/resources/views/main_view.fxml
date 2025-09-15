@@ -101,7 +101,7 @@
                 <Button fx:id="btnGenerarLista" text="Generar Lista" onAction="#generarLista"
                         style="-fx-font-size: 14px; -fx-font-weight: bold;" prefWidth="150"/>
                 <Button fx:id="btnVistaPrevia" text="Vista Previa" onAction="#mostrarVistaPrevia" prefWidth="120"/>
-                <Button fx:id="btnExportarLST" text="Exportar .LST" onAction="#exportarLST"
+                <Button fx:id="btnExportarM3U" text="Exportar .M3U" onAction="#exportarM3U"
                         disable="true" prefWidth="120"/>
                 <Button fx:id="btnLimpiar" text="Limpiar Todo" onAction="#limpiarTodo" prefWidth="120"/>
             </HBox>
